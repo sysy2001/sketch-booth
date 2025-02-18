@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+    <script type="text/javascript" src="/socket.io/socket.io.js"></script>
+    <!-- https://jnordberg.github.io/gif.js/ -->
+    <!-- https://mediarecorder-save.glitch.me/ -->
+    <script type="text/javascript" src="gif.js"></script>
+    <script type="text/javascript" src="gif.worker.js"></script>
+    <script src="/siofu/client.js"></script>
+
+    <!-- css start -->
+    <script src="script.js"></script>
+    <!-- <script src="sketch.js" defer></script> -->
+
+    <link href="https://fonts.googleapis.com/css?family=Lato|Libre+Baskerville|Special+Elite" rel="stylesheet">
+    <link href="style2.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.9.1/lib/p5.js"></script>
+    <script src="https://unpkg.com/ml5@0.20.0-alpha.4/dist/ml5.min.js"></script>
+    <script src="landmark.js"></script>
+    
+    <!-- css end -->
+
+</head>
+
+<body>
+    <script src="sketch3.js"></script>
+
+
+    <div class="marquee">
+        <div class="track">
+          <!-- &nbsp;SKETCHBOOTH SKETCHBOOTH SKETCHBOOTH SKETCHBOOTH SKETCHBOOTH SKETCHBOOTH SKETCHBOOTH SKETCHBOOTH SKETCHBOOTH SKETCHBOOTH SKETCHBOOTH SKETCHBOOTH SKETCHBOOTH SKETCHBOOTH SKETCHBOOTH SKETCHBOOTH SKETCHBOOTH SKETCHBOOTH -->
+          <!-- &nbsp;can your recognize who i am? can your recognize who i am? can your recognize who i am? can your recognize who i am? can your recognize who i am? can your recognize who i am? can your recognize who i am? can your recognize who i am? -->
+        </div>
+    </div>
+
+
+    <h2 class="collapsiblemobile">☰</h2>
+    <div class="left contentmobile">
+
+        <!-- <h1 class="title">GIF Chatroom</h1> -->
+
+        <!-- <h2 class="collapsible">How to use</h2>
+        <div class="content" style="padding-right: 20px;">
+            <ol type="1">
+                <li>Customize text setting then click <b>capture</b> button.</li>
+                <li>Click <b>send</b> button to send photo.</li>
+                <li>Click <b>download</b> button to save the photo.</li>
+              </ol>
+        </div> -->
+
+        <h2>Webcam</h2>
+
+        <div class="border">
+            <div lass="wrapper">
+                <div class="picframe">
+                    <div class="container" id="p5Parent">
+                        <video id="thevideo" muted></video>
+                        <canvas id="text-canvas" width="400" height="400"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="setting">
+
+            <button id="recordButton">capture</button>
+
+            <!-- <button onclick="toggleWiggle(1)">Wiggle</button> -->
+
+            <div class="button-container">
+                <button onclick="changeWiggle(-1)">&#8592;</button>
+                <span id="wiggleValue" style="display:none">0</span>
+                <button onclick="changeWiggle(1)">&#8594;</button>
+              </div>
+
+            <div class="setting-opt">
+                <div class="label"><label for="text-input">Text</label></div>
+                <div class="input"><input type="text" id="text-input" placeholder="Enter text"></div>
+            </div>
+
+            <div class="setting-opt">
+                <div class="label"><label for="font-size-input">Size</label></div>
+                <div class="input"><input type="number" id="font-size-input" placeholder="Enter font size" value="50">
+                </div>
+            </div>
+
+            <div class="setting-opt">
+                <div class="label"><label for="color-input">Col</label></div>
+                <div class="input"><input style="width: 50px" type="color" id="color-input" value="#000000"></div>
+            </div>
+
+            <div class="setting-opt">
+                <div class="label"><label for="font-family-input">Font</label></div>
+                <div class="input">
+                    <select id="font-family-input">
+                        <option value="Arial">Arial</option>
+                        <option value="Verdana">Verdana</option>
+                        <option value="Times New Roman">Times New Roman</option>
+                        <option value="Georgia">Georgia</option>
+                        <option value="Courier New">Courier New</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="setting-opt">
+                <div class="label"><label for="text-position-input">Pos</label></div>
+                <div class="input">
+                    <select id="text-position-input">
+                        <option value="top">Top</option>
+                        <option value="center" selected>Center</option>
+                        <option value="bottom">Bottom</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <h2>Preview</h2>
+
+        <canvas style="display:none" id="thecanvas" width="400" height="400"> </canvas>
+
+        <div class="border">
+            <div lass="wrapper">
+                <div class="picframe">
+                    <div class="container">
+                        <img id="recorded" width="100%" height="100%">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="setting">
+            <button id="SendPhotoButton">Send</button>
+            <button id="downloadGifButton">download</button>
+            <!-- <button id="sendGifButton" disabled>Send GIF</button> -->
+            <input type="file" id="siofu_input" accept="image/png, image/jpeg, image/gif">
+
+        </div>
+    </div>
+
+    <div class="right">
+        <div class="uploads" id="uploads"></div>
+
+        <div id="fileTime"></div>
+
+        <div class="footer">
+            <p>
+                Made by <a href="">Iris</a>, <a href="">Sangyu</a>, <a href="">Shun</a>
+            </p>
+        </div>
+
+    </div>
+
+    <script type="text/javascript" defer>
+
+        let imgData;
+        window.addEventListener("load", function () {
+            var socket = io.connect();
+
+            var siofu = new SocketIOFileUpload(socket);
+            siofu.listenOnInput(document.getElementById("siofu_input"));
+
+            siofu.addEventListener('complete', function (event) {
+                console.log(event.detail.imageName);
+                const imgUploaded = document.createElement('img');
+                imgUploaded.src = event.detail.imageName;
+                const date = new Date();
+                socket.emit('uploads', { src: event.detail.imageName, uploadTime: date });
+                const imgUploadedContainer = document.createElement('div');
+                imgUploadedContainer.className = "imgUploadedContainer";
+                imgUploadedContainer.appendChild(imgUploaded);
+                document.getElementById('uploads').appendChild(imgUploadedContainer);
+
+                const breakLine = document.createElement('br');
+                const time = { hour: '2-digit', minute: '2-digit' };
+                const day = { month: 'short', day: 'numeric', year: 'numeric' };
+                //imgUploadedContainer.appendChild(document.createTextNode(date.toLocaleTimeString('en-us', time)));
+                //imgUploadedContainer.appendChild(breakLine);   // Append line break
+                imgUploadedContainer.appendChild(document.createTextNode(date.toLocaleTimeString('en-us', day)));
+            })
+
+            let video = document.getElementById('thevideo');
+            let canvas = document.getElementById('thecanvas');
+            //let p5canvas = document.getElementById('mycanvas');
+            //let p5canvas = document.getElementsByClassName("p5Canvas");
+            let ctxVideo = canvas.getContext("2d");
+            
+            let constraints = { audio: false, video: true };
+            const canvasWebcam = document.getElementById('text-canvas');
+            const ctxWebcam = canvasWebcam.getContext('2d');
+
+            const textInput = document.getElementById('text-input');
+            const fontSizeInput = document.getElementById('font-size-input');
+            const colorInput = document.getElementById('color-input');
+            const fontFamilyInput = document.getElementById('font-family-input');
+            const textPositionInput = document.getElementById('text-position-input');
+
+            function drawText(ctx) {
+
+                ctx.fillStyle = colorInput.value;
+                ctx.font = `${fontSizeInput.value}px ${fontFamilyInput.value}`;
+
+                const metrics = ctx.measureText(textInput.value);
+                const textWidth = metrics.width;
+                const x = (canvas.width - textWidth) / 2;
+
+                let y;
+                if (textPositionInput.value === 'top') {
+                    y = parseInt(fontSizeInput.value, 10);
+                } else if (textPositionInput.value === 'center') {
+                    y = canvasWebcam.height / 2 + parseInt(fontSizeInput.value, 10) / 2;
+                } else { // 'bottom'
+                    y = canvas.height - 10; // 10 is a margin from the bottom
+                }
+
+                ctx.fillText(textInput.value, x, y);
+            }
+
+            function updateCanvas() {
+                ctxWebcam.clearRect(0, 0, canvas.width, canvas.height);
+                drawText(ctxWebcam);
+            }
+
+            textInput.addEventListener('input', updateCanvas);
+            fontSizeInput.addEventListener('input', updateCanvas);
+            colorInput.addEventListener('input', updateCanvas);
+            fontFamilyInput.addEventListener('change', updateCanvas);
+            textPositionInput.addEventListener('change', updateCanvas);
+
+            updateCanvas(); // Initial canvas rendering
+
+            navigator.mediaDevices.getUserMedia(constraints).then(function (stream) {
+                video.srcObject = stream;
+                video.onloadedmetadata = function (e) {
+
+                    video.play();
+                };
+
+            }).catch(function (err) {
+                alert(err);
+            });
+
+            document.getElementById('recordButton').addEventListener("click", function () {
+                document.getElementById('recordButton').disabled = true;
+                ctxVideo.clearRect(0, 0, canvas.width, canvas.height); 
+
+                let sideLength = Math.min(video.videoWidth, video.videoHeight);
+                let sourceX = (video.videoWidth - sideLength) / 2;
+                let sourceY = (video.videoHeight - sideLength) / 2;
+                //ctxVideo.drawImage(p5canvas, sourceX, sourceY, sideLength, sideLength, 0, 0, canvas.width, canvas.height);
+                let p5canvas = document.getElementById('defaultCanvas0');
+                console.log("p5canvas:" + p5canvas);
+                ctxVideo.drawImage(p5canvas, 0, 0, canvas.width,canvas.width);
+
+                drawText(ctxVideo);
+
+                imgData = canvas.toDataURL('image/png');
+                document.getElementById('recorded').src = imgData;
+
+                setTimeout(function () {
+                    document.getElementById('recordButton').disabled = false;
+                }, 1000);
+
+            });
+
+
+            document.getElementById('SendPhotoButton').addEventListener("click", function () {
+                
+                const imgUploaded = document.createElement('img');
+                imgUploaded.src = imgData;           
+                const imgUploadedContainer = document.createElement('div');
+                imgUploadedContainer.className = "imgUploadedContainer";
+                imgUploadedContainer.appendChild(imgUploaded);
+
+                const date = new Date();
+                const uploadTime = document.createElement('div');
+                const day = { month: 'short', day: 'numeric', year: 'numeric' };
+                uploadTime.textContent = new Date().toLocaleTimeString('en-us', day);
+                imgUploadedContainer.appendChild(uploadTime);
+
+                document.getElementById('uploads').appendChild(imgUploadedContainer);
+
+                socket.emit("photo",imgData);
+                
+            });
+            
+            document.getElementById('downloadGifButton').addEventListener("click", function () {
+                var recordedGifURL = document.getElementById('recorded').src;
+                var currentDate = new Date();
+                var filename = 'recorded_' + currentDate.getTime() + '.png';
+                var link = document.createElement('a');
+                link.href = recordedGifURL;
+                link.download = filename;
+                link.click();
+            });
+
+
+            socket.on('connect', function () {
+                console.log("Connected");
+                socket.emit('history', null);
+            });
+
+
+            socket.on('photo', function (data) {
+                var imgUploaded = new Image();
+                imgUploaded.src = data; 
+                imgUploaded.className = "uploaded-photo"; 
+                var imgUploadedContainer = document.createElement('div');
+                imgUploadedContainer.className = "imgUploadedContainer";
+                imgUploadedContainer.appendChild(imgUploaded);
+                document.getElementById('uploads').appendChild(imgUploadedContainer);
+            });
+
+            socket.on('uploads', function (data) {
+                const imgUploaded = document.createElement('img');
+                imgUploaded.src = data.src;
+                console.log("source: "+ data.src);
+                const uploadTime = document.createElement('div');
+                const imgUploadedContainer = document.createElement('div');
+                imgUploadedContainer.className = "imgUploadedContainer";
+                const day = { month: 'short', day: 'numeric', year: 'numeric' };
+                uploadTime.textContent = "Upload time: " + new Date(data.uploadTime).toLocaleString();
+                uploadTime.textContent = new Date(data.uploadTime).toLocaleTimeString('en-us', day);
+                document.getElementById('uploads').appendChild(imgUploadedContainer);
+                imgUploadedContainer.appendChild(imgUploaded);
+                imgUploadedContainer.appendChild(uploadTime);
+            });
+
+
+        });
+    </script>
+
+</body>
+
+</html>
+
